@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P30 · 3SAT → HAMPATH</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="tool-shell.css">
+<link rel="stylesheet" href="../presentation.css">
+<script src="../widget-loop.js"></script>
+<style>
+/* ── Page-local styles only ── */
+
+.proof-pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 20px 0;
+  overflow-x: auto;
+}
+.pipeline-step {
+  flex: 1;
+  min-width: 110px;
+  background: var(--paper);
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 8px;
+  padding: 14px 10px 12px;
+  text-align: center;
+}
+.pipeline-step .ps-num {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.pipeline-step .ps-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.pipeline-step .ps-sub {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.pipeline-step.highlight {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.pipeline-step.highlight .ps-label { color: var(--accent-strong); }
+.pipeline-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  color: var(--accent);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.slide-intro {
+  background: linear-gradient(135deg, var(--accent-soft) 0%, #e8f5ef 100%);
+  border: 1.5px solid var(--accent-soft);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 12px 0 18px;
+}
+.slide-intro .si-eyebrow {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.slide-intro .si-body {
+  font-size: 15.5px;
+  color: var(--accent-strong);
+  line-height: 1.5;
+  margin: 0;
+}
+.slide-intro .si-body strong { font-weight: 700; }
+
+.verdict-box {
+  background: var(--accent-soft);
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+  margin: 18px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+.equiv-box {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+.equiv-side {
+  background: var(--paper);
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: var(--sans);
+  font-size: 14px;
+  text-align: center;
+}
+.equiv-side.sat { border-color: var(--accent); background: var(--accent-soft); }
+.equiv-side.ham { border-color: var(--info); background: var(--info-soft); }
+.equiv-side .es-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.equiv-side.sat .es-label { color: var(--accent-strong); }
+.equiv-side.ham .es-label { color: var(--info); }
+.equiv-arrow {
+  font-size: 28px;
+  color: var(--gold);
+  font-weight: 700;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .equiv-box { grid-template-columns: 1fr; }
+  .equiv-arrow { transform: rotate(90deg); }
+}
+
+.diamond-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+  display: inline-block;
+  flex-shrink: 0;
+}
+</style>
+</head><body>
+
+<header class="tool-header">
+  <div class="crumb"><a href="index.html">← Student tools</a> · Problem 30 · Lecture 12 · Round 2 (30 pts)</div>
+  <h1>3SAT →<sub>p</sub> HAMPATH</h1>
+  <p class="sub">Variable diamonds + clause nodes. Hamiltonian path = satisfying assignment.</p>
+  <div class="tags">
+    <span class="tag-pill">CLO-4</span>
+    <span class="tag-pill warn">R2 · 30 pts</span>
+    <span class="tag-pill info">L12</span>
+    <span class="tag-pill">5 Slides</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 · The Big Picture
+     ═══════════════════════════════════════════════════════ -->
+<section id="slide-big-picture">
+  <div class="component-audio" style="margin:8px 0 6px;padding:6px 10px;background:#fbf6ef;border-left:3px solid var(--gold,#c0a04e);border-radius:4px;display:flex;align-items:center;gap:8px;font-family:var(--sans,system-ui);font-size:11.5px;color:#555;"><span style="font-weight:700;color:var(--gold,#a68526);">🔊 Listen</span><audio controls preload="none" src="../audio/sections/p30-s1.mp3" style="height:28px;flex:1;max-width:280px;"></audio></div>
+  <div class="section-label">Slide 1 · The Big Picture</div>
+
+  <h2>3SAT Reduces to HAMPATH</h2>
+
+  <div class="slide-intro">
+    <div class="si-eyebrow">The reduction goal</div>
+    <p class="si-body">
+      Given any 3CNF formula φ, build a directed graph G with nodes <strong>s</strong> and <strong>t</strong> such that <strong>G has a Hamiltonian path from s → t if and only if φ is satisfiable</strong>. This proves HAMPATH is NP-complete.
+    </p>
+  </div>
+
+  <div class="cols-2" style="gap:14px;margin-bottom:18px;">
+    <div class="callout info">
+      <h5>HAMPATH</h5>
+      <p style="margin:0;font-size:14px;">{ ⟨G, s, t⟩ : G has a directed path visiting <em>every vertex exactly once</em> from s to t }</p>
+    </div>
+    <div class="callout warn">
+      <h5>3SAT</h5>
+      <p style="margin:0;font-size:14px;">{ ⟨φ⟩ : φ is a satisfiable Boolean formula in 3CNF — a conjunction of 3-literal clauses }</p>
+    </div>
+  </div>
+
+  <div class="proof-pipeline">
+    <div class="pipeline-step highlight">
+      <div class="ps-num">Start</div>
+      <div class="ps-label">s</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="ps-num">Variable</div>
+      <div class="ps-label">Diamond x₁</div>
+      <div class="ps-sub">LTR = TRUE · RTL = FALSE</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step">
+      <div class="ps-num">Variable</div>
+      <div class="ps-label">Diamond x₂</div>
+      <div class="ps-sub">LTR = TRUE · RTL = FALSE</div>
+    </div>
+    <div class="pipeline-arrow">→ · · · →</div>
+    <div class="pipeline-step">
+      <div class="ps-num">Variable</div>
+      <div class="ps-label">Diamond xₙ</div>
+      <div class="ps-sub">LTR = TRUE · RTL = FALSE</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-step highlight">
+      <div class="ps-num">End</div>
+      <div class="ps-label">t</div>
+    </div>
+  </div>
+
+  <p style="margin:0 0 14px;">Off to the side sit clause nodes c₁ … cₖ. The Hamiltonian path must <em>detour</em> into each one while passing through a diamond — but only when the diamond's direction makes that clause's literal true.</p>
+
+  <div class="equiv-box">
+    <div class="equiv-side sat">
+      <div class="es-label">φ is satisfiable</div>
+      Every clause has ≥ 1 true literal
+    </div>
+    <div class="equiv-arrow">⟺</div>
+    <div class="equiv-side ham">
+      <div class="es-label">G has a Hamiltonian path</div>
+      Every clause node is reachable via a matching detour
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 · The Variable Diamond
+     ═══════════════════════════════════════════════════════ -->
+<section id="slide-diamond">
+  <div class="component-audio" style="margin:8px 0 6px;padding:6px 10px;background:#fbf6ef;border-left:3px solid var(--gold,#c0a04e);border-radius:4px;display:flex;align-items:center;gap:8px;font-family:var(--sans,system-ui);font-size:11.5px;color:#555;"><span style="font-weight:700;color:var(--gold,#a68526);">🔊 Listen</span><audio controls preload="none" src="../audio/sections/p30-s2.mp3" style="height:28px;flex:1;max-width:280px;"></audio></div>
+  <div class="section-label">Slide 2 · The Variable Diamond</div>
+
+  <h2>Variable Gadget: The Diamond</h2>
+
+  <div class="slide-intro">
+    <div class="si-eyebrow">The truth encoder</div>
+    <p class="si-body">
+      For each variable xᵢ, we build a <strong>diamond</strong>. Any Hamiltonian path must traverse it in exactly one direction: <strong>left-to-right (TRUE)</strong> or <strong>right-to-left (FALSE)</strong> — no mixing allowed.
+    </p>
+  </div>
+
+  <div class="widget">
+    <div class="widget-title">
+      Variable Diamond for xᵢ &nbsp;(k = 2 clauses → 7 internal nodes)
+      <span class="pill">Auto-plays · loops</span>
+    </div>
+    <div class="controls">
+      <button class="btn play-btn" id="diam-run">⏸ Pause</button>
+      <button class="btn ghost" id="diam-step">Step</button>
+      <button class="btn ghost" id="diam-reset">Reset</button>
+      <label class="speed-control">Speed
+        <input type="range" id="diam-speed" min="0.25" max="3" step="0.25" value="1">
+        <span id="diam-speed-label" style="font-family:var(--mono);min-width:28px;">1×</span>
+      </label>
+    </div>
+    <svg id="diam-svg" viewBox="0 0 720 370" style="width:100%;height:370px;background:#f8f7f2;border-radius:6px;border:1px solid var(--rule);" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="diamond-legend" style="margin-top:8px;">
+      <div class="legend-item"><span class="legend-dot" style="background:#d6ebe4;border-color:#2a6f5f;"></span> s / t (entry &amp; exit)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#e8e8e8;border-color:#555;"></span> Internal row node</div>
+      <div class="legend-item"><span style="display:inline-block;width:28px;height:12px;border:1.5px dashed #888;border-radius:50%;vertical-align:middle;"></span> Clause group (pair)</div>
+    </div>
+    <div class="explain-panel" id="diam-explain" style="min-height:200px;">
+      <div class="step-num">Ready</div>
+      <p style="margin:4px 0;">Watch how the diamond is built and how a Hamiltonian path must commit to one direction.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 · Clause Nodes & Wiring
+     ═══════════════════════════════════════════════════════ -->
+<section id="slide-clause">
+  <div class="component-audio" style="margin:8px 0 6px;padding:6px 10px;background:#fbf6ef;border-left:3px solid var(--gold,#c0a04e);border-radius:4px;display:flex;align-items:center;gap:8px;font-family:var(--sans,system-ui);font-size:11.5px;color:#555;"><span style="font-weight:700;color:var(--gold,#a68526);">🔊 Listen</span><audio controls preload="none" src="../audio/sections/p30-s3.mp3" style="height:28px;flex:1;max-width:280px;"></audio></div>
+  <div class="section-label">Slide 3 · Clause Gadget & Wiring</div>
+
+  <h2>Clause Gadget: The Detour</h2>
+
+  <div class="slide-intro">
+    <div class="si-eyebrow">Enforcing satisfaction</div>
+    <p class="si-body">
+      Each clause Cⱼ is a <strong>single node</strong> the path must visit. Edges are wired so the detour to cⱼ is only possible when the diamond is moving in the direction that makes a literal in Cⱼ true.
+    </p>
+  </div>
+
+  <div class="widget">
+    <div class="widget-title">
+      φ = (x₁ ∨ ¬x₂) ∧ (¬x₁ ∨ x₂) — Wiring the detours
+      <span class="pill">Auto-plays · loops</span>
+    </div>
+    <div class="controls">
+      <button class="btn play-btn" id="wire-run">⏸ Pause</button>
+      <button class="btn ghost" id="wire-step">Step</button>
+      <button class="btn ghost" id="wire-reset">Reset</button>
+      <label class="speed-control">Speed
+        <input type="range" id="wire-speed" min="0.25" max="3" step="0.25" value="1">
+        <span id="wire-speed-label" style="font-family:var(--mono);min-width:28px;">1×</span>
+      </label>
+    </div>
+    <svg id="wire-svg" viewBox="0 0 720 550" style="width:100%;height:550px;background:#f8f7f2;border-radius:6px;border:1px solid var(--rule);" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="explain-panel" id="wire-explain" style="min-height:200px;">
+      <div class="step-num">Ready</div>
+      <p style="margin:4px 0;">Watch how each literal in the formula is wired as a detour edge connecting a diamond row to its clause node.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 · Worked Example: φ = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₂)
+     ═══════════════════════════════════════════════════════ -->
+<section id="slide-example">
+  <div class="section-label">Slide 4 · Worked Example</div>
+
+  <h2>Satisfying Assignment → Hamiltonian Path</h2>
+
+  <div class="slide-intro">
+    <div class="si-eyebrow">Concrete example</div>
+    <p class="si-body">
+      Take φ = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₂). The assignment <strong>x₁ = FALSE, x₂ = TRUE</strong> satisfies φ. Below you can see the resulting graph and — highlighted in green — the Hamiltonian path from s to t that witnesses satisfiability.
+    </p>
+  </div>
+
+  <div class="cols-2" style="gap:12px;margin-bottom:16px;">
+    <div class="callout info">
+      <h5>The formula</h5>
+      <p style="margin:0;font-size:14px;">φ = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₂)</p>
+      <p style="margin:6px 0 0;font-size:13px;color:var(--muted);">
+        C₁ = (x₁ ∨ x₂) &nbsp;·&nbsp; C₂ = (¬x₁ ∨ x₂)
+      </p>
+    </div>
+    <div class="callout" style="border-left-color:var(--accent);">
+      <h5>Satisfying assignment</h5>
+      <p style="margin:0;font-size:14px;"><strong>x₁ = FALSE</strong> → row 1 goes <span style="color:var(--info);">RIGHT → LEFT</span><br>
+      <strong>x₂ = TRUE</strong> &nbsp;→ row 2 goes <span style="color:var(--accent);">LEFT → RIGHT</span></p>
+      <p style="margin:6px 0 0;font-size:13px;color:var(--muted);">C₁ satisfied by x₂=T &nbsp;·&nbsp; C₂ satisfied by x₂=T</p>
+    </div>
+  </div>
+
+  <div class="widget" style="padding:0;overflow:hidden;">
+    <div class="widget-title" style="padding:12px 18px 10px;border-bottom:1px solid var(--rule);">
+      Graph G for φ = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₂) &nbsp;—&nbsp; green path = Hamiltonian path (x₁=F, x₂=T)
+    </div>
+    <svg id="example-svg" viewBox="0 0 720 570" style="width:100%;height:570px;background:#f8f7f2;" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div style="padding:10px 16px;background:var(--accent-soft);border-top:1px solid var(--rule);font-family:var(--sans);font-size:13px;color:var(--accent-strong);">
+      <strong>Path direction:</strong> s → row 1 right-to-left (x₁=FALSE) → connector → row 2 left-to-right with detour to c₁ → continue → detour to c₂ → right end → t
+    </div>
+  </div>
+
+  <div class="callout gold" style="margin-top:16px;">
+    <h5>Reading off the correspondence</h5>
+    <p style="margin:0;font-size:14px;">
+      Row 1 goes <strong>right-to-left</strong> → x₁ = FALSE. &nbsp;
+      Row 2 goes <strong>left-to-right</strong> → x₂ = TRUE. &nbsp;
+      The detours through c₁ and c₂ are both taken via row 2's LTR pass (x₂=TRUE makes both clauses true). Every node is visited exactly once. ✓
+    </p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 · Conclusion
+     ═══════════════════════════════════════════════════════ -->
+<section id="slide-conclusion">
+  <div class="component-audio" style="margin:8px 0 6px;padding:6px 10px;background:#fbf6ef;border-left:3px solid var(--gold,#c0a04e);border-radius:4px;display:flex;align-items:center;gap:8px;font-family:var(--sans,system-ui);font-size:11.5px;color:#555;"><span style="font-weight:700;color:var(--gold,#a68526);">🔊 Listen</span><audio controls preload="none" src="../audio/sections/p30-s5.mp3" style="height:28px;flex:1;max-width:280px;"></audio></div>
+  <div class="section-label">Slide 5 · Conclusion</div>
+
+  <h2>Putting It Together</h2>
+
+  <div class="cols-2" style="gap:16px;margin:16px 0;">
+    <div class="callout info">
+      <h5>Satisfiable ⟹ Hamiltonian Path</h5>
+      <p style="margin:0;font-size:14px;">
+        For each variable, set the diamond direction to match its truth value. For each clause, pick any true literal and take the detour to cⱼ. Every node is visited exactly once.
+      </p>
+    </div>
+    <div class="callout info">
+      <h5>Hamiltonian Path ⟹ Satisfiable</h5>
+      <p style="margin:0;font-size:14px;">
+        By normality, each diamond is traversed in a single direction. Read the directions as a truth assignment. Since every clause node was visited via a matching detour, every clause is satisfied.
+      </p>
+    </div>
+  </div>
+
+  <div class="verdict-box">
+    φ is satisfiable &nbsp;⟺&nbsp; G has a Hamiltonian path from s to t. &nbsp;∴ HAMPATH is NP-complete. □
+  </div>
+
+  <div class="callout gold" style="margin-top:16px;">
+    <h5>Size of the reduction</h5>
+    <p style="margin:0;font-size:14px;">Each diamond has 3k+1 internal + 2 top/bottom nodes = O(k). With n variables and k clauses: <strong>O(n·k)</strong> total nodes and edges — polynomial in |φ|. ✓</p>
+  </div>
+
+  <div class="callout" style="border-left-color:var(--info);margin-top:14px;">
+    <h5>📚 Further Reading</h5>
+    <p style="margin:0;font-size:14px;">
+      <strong>Sipser:</strong> Theorem 7.46, Figures 7.49–7.51 ·
+      <strong>Lecture notes:</strong> Module 5 slide 5 ·
+      <strong>Companion:</strong> <em>P23</em> (HAMPATH verifier), <em>P29</em> (SUBSET-SUM).
+    </p>
+  </div>
+</section>
+
+</div><!-- /wrap -->
+
+<footer class="foot">Problem 30 · BCS 402 · Dr. Arash Kermani · CUD</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   SHARED HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+// Draw arrowhead at the midpoint along a straight line
+function arrowOnLine(x1, y1, x2, y2, color, size, tFrac) {
+  tFrac = tFrac || 0.52;
+  size = size || 7;
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx+dy*dy) || 1;
+  const ux = dx/len, uy = dy/len;
+  const mx = x1 + ux*(len*tFrac), my = y1 + uy*(len*tFrac);
+  const px = -uy*size, py = ux*size;
+  return `<polygon points="${mx},${my} ${mx-ux*size+px*0.5},${my-uy*size+py*0.5} ${mx-ux*size-px*0.5},${my-uy*size-py*0.5}" fill="${color}"/>`;
+}
+
+// Draw arrowhead along a quadratic bezier curve at a given t
+function arrowOnCurve(x1, y1, cpx, cpy, x2, y2, color, size, t) {
+  t = t || 0.5; size = size || 7;
+  // Tangent at t for quadratic bezier
+  const tx = 2*(1-t)*(cpx-x1) + 2*t*(x2-cpx);
+  const ty = 2*(1-t)*(cpy-y1) + 2*t*(y2-cpy);
+  const len = Math.sqrt(tx*tx+ty*ty) || 1;
+  const ux = tx/len, uy = ty/len;
+  // Point at t
+  const bx = (1-t)*(1-t)*x1 + 2*(1-t)*t*cpx + t*t*x2;
+  const by = (1-t)*(1-t)*y1 + 2*(1-t)*t*cpy + t*t*y2;
+  const px = -uy*size, py = ux*size;
+  return `<polygon points="${bx},${by} ${bx-ux*size+px*0.5},${by-uy*size+py*0.5} ${bx-ux*size-px*0.5},${by-uy*size-py*0.5}" fill="${color}"/>`;
+}
+
+// Draw a node circle with label
+function nodeCircle(x, y, r, fill, stroke, sw, label, labelSize, labelColor) {
+  return `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>` +
+    `<text x="${x}" y="${y+labelSize*0.38}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="${labelSize}" font-weight="700" fill="${labelColor || '#1a1a1a'}">${label}</text>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 2 · Variable Diamond Widget — Sipser-style
+   All row nodes same grey, no labels, dashed ovals for clause groups
+   viewBox 720×340
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+  const W = 720, H = 370;
+  const S = { x: 360, y: 38 };
+  const T = { x: 360, y: 308 };
+  const ROW_Y = 172;
+  const NR = 16; // node radius
+
+  // 7 internal row nodes — same color, no labels, 2 per clause + separators
+  // x positions: left-sep | c1-left c1-right | mid-sep | c2-left c2-right | right-sep
+  const rowNodes = [
+    { x: 80,  y: ROW_Y, type: 'sep'  },
+    { x: 195, y: ROW_Y, type: 'pair', clause: 1 },
+    { x: 285, y: ROW_Y, type: 'pair', clause: 1 },
+    { x: 360, y: ROW_Y, type: 'sep'  },
+    { x: 435, y: ROW_Y, type: 'pair', clause: 2 },
+    { x: 525, y: ROW_Y, type: 'pair', clause: 2 },
+    { x: 640, y: ROW_Y, type: 'sep'  },
+  ];
+  const FIRST = rowNodes[0], LAST = rowNodes[rowNodes.length-1];
+
+  // Clause group positions for dashed ovals
+  const clauseGroups = [
+    { cx: 240, cy: ROW_Y, rx: 68, ry: 30, label: 'c₁' },
+    { cx: 480, cy: ROW_Y, rx: 68, ry: 30, label: 'c₂' },
+  ];
+
+  const stages = [
+    {
+      name: 'Step 1 · Entry and exit nodes',
+      desc: 'Every variable xᵢ gets a <strong>diamond gadget</strong> with an entry node (top) and an exit node (bottom). The rest of the graph links only to these two nodes — the diamond is self-contained. The Hamiltonian path must enter from the top and exit from the bottom (or vice versa).'
+    },
+    {
+      name: 'Step 2 · The internal row (3k+1 nodes)',
+      desc: 'Inside the diamond we place a horizontal row of <strong>3k+1 nodes</strong> (here k=2 clauses gives 7 nodes). The nodes alternate between <em>separators</em> (single nodes between groups) and <em>pairs</em> (two nodes per clause, shown grouped by dashed ovals). The two nodes in each pair are where detour edges to clause nodes will attach. Separators prevent illegal jumps between diamonds.'
+    },
+    {
+      name: 'Step 3 · Left → Right encodes TRUE',
+      desc: '<strong>Traversing left to right</strong> through the row assigns xᵢ = TRUE. Starting from the left end, the path sweeps through every node in order all the way to the right end, then exits downward. The bidirectional edges allow either direction — but once the path commits, it must continue straight through to the other end.'
+    },
+    {
+      name: 'Step 4 · Right → Left encodes FALSE',
+      desc: '<strong>Traversing right to left</strong> through the row assigns xᵢ = FALSE. The path enters from the right end and sweeps all the way back to the left, then exits downward. These are the <em>only</em> two valid traversals — there is no way to skip nodes or reverse mid-row, so every Hamiltonian path encodes a definite truth value for xᵢ.'
+    },
+  ];
+
+  let stage = 0;
+  let pathHead = -1, pathOrder = [], sweepTimer = null;
+
+  function drawDiamond() {
+    const svg = document.getElementById('diam-svg');
+    if (!svg) return;
+    const st = stages[Math.min(stage, stages.length-1)];
+    let s = '';
+
+    // Stage label
+    s += `<text x="${W/2 + 70}" y="22" text-anchor="left" font-family="var(--sans),sans-serif" font-size="13" font-weight="700" fill="var(--accent)">${st.name}</text>`;
+
+    if (stage >= 1) {
+      const edgeClr = '#555';
+
+      // Diagonal edges: S to row ends, row ends to T
+      s += `<line x1="${S.x}" y1="${S.y+NR}" x2="${FIRST.x}" y2="${FIRST.y-NR}" stroke="${edgeClr}" stroke-width="1.8"/>`;
+      s += arrowOnLine(S.x, S.y+NR, FIRST.x, FIRST.y-NR, edgeClr, 7, 0.55);
+      s += `<line x1="${S.x}" y1="${S.y+NR}" x2="${LAST.x}" y2="${LAST.y-NR}" stroke="${edgeClr}" stroke-width="1.8"/>`;
+      s += arrowOnLine(S.x, S.y+NR, LAST.x, LAST.y-NR, edgeClr, 7, 0.55);
+      s += `<line x1="${FIRST.x}" y1="${FIRST.y+NR}" x2="${T.x}" y2="${T.y-NR}" stroke="${edgeClr}" stroke-width="1.8"/>`;
+      s += arrowOnLine(FIRST.x, FIRST.y+NR, T.x, T.y-NR, edgeClr, 7, 0.55);
+      s += `<line x1="${LAST.x}" y1="${LAST.y+NR}" x2="${T.x}" y2="${T.y-NR}" stroke="${edgeClr}" stroke-width="1.8"/>`;
+      s += arrowOnLine(LAST.x, LAST.y+NR, T.x, T.y-NR, edgeClr, 7, 0.55);
+
+      // Row edges — bidirectional (two offset parallel lines)
+      for (let i = 0; i < rowNodes.length-1; i++) {
+        const n1 = rowNodes[i], n2 = rowNodes[i+1];
+        const isActive = pathHead >= 0 &&
+          pathOrder.slice(0, pathHead+1).includes(i) &&
+          pathOrder.slice(0, pathHead+1).includes(i+1);
+        const activeClr = stage === 2 ? '#2a6f5f' : '#2f60a8';
+        const ltrC = (isActive && stage === 2) ? activeClr : '#999';
+        const rtlC = (isActive && stage === 3) ? activeClr : '#999';
+        const ltrW = (isActive && stage === 2) ? 2.5 : 1.4;
+        const rtlW = (isActive && stage === 3) ? 2.5 : 1.4;
+        const oy = 5;
+        s += `<line x1="${n1.x+NR}" y1="${n1.y-oy}" x2="${n2.x-NR}" y2="${n2.y-oy}" stroke="${ltrC}" stroke-width="${ltrW}" stroke-linecap="round"/>`;
+        s += arrowOnLine(n1.x+NR, n1.y-oy, n2.x-NR, n2.y-oy, ltrC, 6);
+        s += `<line x1="${n2.x-NR}" y1="${n2.y+oy}" x2="${n1.x+NR}" y2="${n1.y+oy}" stroke="${rtlC}" stroke-width="${rtlW}" stroke-linecap="round"/>`;
+        s += arrowOnLine(n2.x-NR, n2.y+oy, n1.x+NR, n1.y+oy, rtlC, 6);
+      }
+
+      // Dashed clause group ovals (Sipser-style)
+      clauseGroups.forEach(g => {
+        s += `<ellipse cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="5 3"/>`;
+        s += `<text x="${g.cx}" y="${g.cy + g.ry + 14}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="11" fill="#555" font-weight="600">${g.label}</text>`;
+      });
+
+      // Row nodes — all same grey, no labels, active node highlighted
+      rowNodes.forEach((n, i) => {
+        const isActive = pathHead >= 0 && pathOrder[pathHead] === i;
+        const fill = isActive ? '#ffe066' : '#e0e0e0';
+        const stroke = isActive ? '#b58b00' : '#555';
+        const sw = isActive ? 3 : 1.8;
+        s += `<circle cx="${n.x}" cy="${n.y}" r="${NR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+        if (isActive) {
+          s += `<polygon points="${n.x-5},${n.y-NR-11} ${n.x+5},${n.y-NR-11} ${n.x},${n.y-NR-2}" fill="#b58b00"/>`;
+        }
+      });
+
+      // Direction banner
+      if (stage === 2) {
+        s += `<rect x="150" y="${H-30}" width="420" height="22" rx="5" fill="#d6ebe4" stroke="#2a6f5f" stroke-width="1"/>`;
+        s += `<text x="360" y="${H-15}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="12" fill="#1c4a3f" font-weight="700">→ Traversing LEFT to RIGHT  =  xᵢ = TRUE</text>`;
+      } else if (stage === 3) {
+        s += `<rect x="150" y="${H-30}" width="420" height="22" rx="5" fill="#d6e3f4" stroke="#2f60a8" stroke-width="1"/>`;
+        s += `<text x="360" y="${H-15}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="12" fill="#1c3f6a" font-weight="700">← Traversing RIGHT to LEFT  =  xᵢ = FALSE</text>`;
+      }
+    }
+
+    // S and T nodes (always drawn, distinct color)
+    s += nodeCircle(S.x, S.y, NR+1, '#d6ebe4', '#2a6f5f', 2.5, 's', 14, '#1c4a3f');
+    s += nodeCircle(T.x, T.y, NR+1, '#d6ebe4', '#2a6f5f', 2.5, 't', 14, '#1c4a3f');
+
+    // Variable label
+    s += `<text x="18" y="${ROW_Y+5}" font-family="var(--sans),sans-serif" font-size="15" fill="var(--accent)" font-weight="700">xᵢ</text>`;
+
+    if (stage === 0) {
+      s += `<text x="${W/2}" y="${ROW_Y+5}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="13" fill="var(--muted)">← internal row added in Step 2 →</text>`;
+    }
+
+    svg.innerHTML = s;
+    document.getElementById('diam-explain').innerHTML = `<div class="step-num">${st.name}</div><p style="margin:6px 0 0;">${st.desc}</p>`;
+  }
+
+  function startSweep(dir) {
+    clearInterval(sweepTimer);
+    pathOrder = rowNodes.map((_, i) => i);
+    if (dir === -1) pathOrder.reverse();
+    pathHead = -1;
+    sweepTimer = setInterval(() => {
+      if (pathHead < pathOrder.length-1) { pathHead++; drawDiamond(); }
+      else clearInterval(sweepTimer);
+    }, 260);
+  }
+  function stopSweep() { clearInterval(sweepTimer); pathHead = -1; }
+
+  let _stage = 0;
+  function step() {
+    _stage = Math.min(_stage+1, stages.length-1);
+    stage = _stage;
+    stopSweep();
+    if (stage === 2) startSweep(1);
+    else if (stage === 3) startSweep(-1);
+    drawDiamond();
+  }
+  function reset() { _stage = 0; stage = 0; stopSweep(); drawDiamond(); }
+  function atEnd() { return _stage >= stages.length-1; }
+
+  WidgetLoop.create({
+    runBtn: document.getElementById('diam-run'),
+    stepBtn: document.getElementById('diam-step'),
+    resetBtn: document.getElementById('diam-reset'),
+    speedSlider: document.getElementById('diam-speed'),
+    speedLabel: document.getElementById('diam-speed-label'),
+    doStep: step, atEnd, doReset: reset,
+    baseStepMs: 3000, baseLoopMs: 4500, autoStartMs: 1500
+  });
+  reset();
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 3 · Clause Wiring Widget — Sipser-style
+   All row nodes same grey, no labels, dashed ovals for clause pairs,
+   clause nodes stacked vertically on the right
+   viewBox 720×520
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+  const W = 720, H = 550;
+  const NR = 15; // node radius
+
+  const S   = { x: 330, y: 34 };
+  const MID = { x: 330, y: 258 };
+  const T   = { x: 330, y: 484 };
+  const ROW1_Y = 146;
+  const ROW2_Y = 370;
+
+  function mkRow(ry) {
+    return [
+      { x: 75,  y: ry, type: 'sep'  },
+      { x: 168, y: ry, type: 'pair', clause: 1 },
+      { x: 248, y: ry, type: 'pair', clause: 1 },
+      { x: 330, y: ry, type: 'sep'  },
+      { x: 412, y: ry, type: 'pair', clause: 2 },
+      { x: 492, y: ry, type: 'pair', clause: 2 },
+      { x: 585, y: ry, type: 'sep'  },
+    ];
+  }
+
+  const row1 = mkRow(ROW1_Y);
+  const row2 = mkRow(ROW2_Y);
+
+  // Clause nodes stacked to the right (Sipser style)
+  const C1 = { x: 48, y: 220, label: 'c₁' };
+  const C2 = { x: 672, y: 220, label: 'c₂' };
+
+  // Clause group ovals for each row
+  const clauseGroups1 = [
+    { cx: 208, cy: ROW1_Y, rx: 57, ry: 26, label: 'c₁' },
+    { cx: 452, cy: ROW1_Y, rx: 57, ry: 26, label: 'c₂' },
+  ];
+  const clauseGroups2 = [
+    { cx: 208, cy: ROW2_Y, rx: 57, ry: 26, label: 'c₁' },
+    { cx: 452, cy: ROW2_Y, rx: 57, ry: 26, label: 'c₂' },
+  ];
+
+  // Wire definitions — same logic as before, same connections
+  const WIRES = [
+    {
+      from: row1[1], to: C1, back: row1[2],
+      color: '#2a6f5f', dir: 'LTR', row: 1, literal: 'x₁', clause: 1,
+      label: 'x₁ in C₁ — left-to-right through row 1  (x₁ = TRUE)',
+    },
+    {
+      from: row2[2], to: C1, back: row2[1],
+      color: '#2f60a8', dir: 'RTL', row: 2, literal: '¬x₂', clause: 1,
+      label: '¬x₂ in C₁ — right-to-left through row 2  (x₂ = FALSE)',
+    },
+    {
+      from: row1[5], to: C2, back: row1[4],
+      color: '#2f60a8', dir: 'RTL', row: 1, literal: '¬x₁', clause: 2,
+      label: '¬x₁ in C₂ — right-to-left through row 1  (x₁ = FALSE)',
+    },
+    {
+      from: row2[4], to: C2, back: row2[5],
+      color: '#2a6f5f', dir: 'LTR', row: 2, literal: 'x₂', clause: 2,
+      label: 'x₂ in C₂ — left-to-right through row 2  (x₂ = TRUE)',
+    },
+  ];
+
+  const msgs = [
+    {
+      title: 'Setup: s, two diamond rows, t',
+      body: 'Formula φ = (x₁ ∨ ¬x₂) ∧ (¬x₁ ∨ x₂) has 2 variables and 2 clauses. We build one diamond row per variable (x₁ on top, x₂ on bottom), linked by a connector node. Clause nodes c₁ and c₂ are placed to the right — the Hamiltonian path must visit each one exactly once via a detour from the appropriate row.',
+    },
+    {
+      title: 'Wire 1: x₁ (positive) in C₁ — left-to-right detour on row 1',
+      body: 'Since x₁ appears <em>positive</em> in C₁, we add a detour: while traveling <strong>left to right</strong> through row 1, the path can branch out to c₁ and return. This detour is only possible when the row is going left to right — encoding x₁ = TRUE. Going right to left, the edges point the wrong way and the detour is blocked.',
+    },
+    {
+      title: 'Wire 2: ¬x₂ (negative) in C₁ — right-to-left detour on row 2',
+      body: 'Since ¬x₂ appears in C₁, we wire a detour in the <strong>right-to-left</strong> direction on row 2 — the direction that encodes x₂ = FALSE. Now c₁ can be reached via either direction: from row 1 going left to right (x₁ = TRUE) or from row 2 going right to left (x₂ = FALSE). At least one of these must hold for C₁ to be satisfied.',
+    },
+    {
+      title: 'Wire 3: ¬x₁ (negative) in C₂ — right-to-left detour on row 1',
+      body: 'Since ¬x₁ appears in C₂, we wire a detour in the <strong>right-to-left</strong> direction on row 1 (encoding x₁ = FALSE). The path can reach c₂ from row 1 only when it travels right to left — meaning x₁ is assigned FALSE.',
+    },
+    {
+      title: 'Wire 4: x₂ (positive) in C₂ — left-to-right detour on row 2',
+      body: 'Since x₂ appears positive in C₂, we wire a detour in the <strong>left-to-right</strong> direction on row 2 (encoding x₂ = TRUE).<br><br>✅ Wiring complete. Every satisfying assignment corresponds to a Hamiltonian path (the right detours are available), and every Hamiltonian path encodes a satisfying assignment (each clause node was reachable, so each clause is true).',
+    },
+  ];
+
+  let stage = 0;
+
+  function drawDetour(s, wire, active) {
+    const { from, to, back, color } = wire;
+    const alpha = active ? 1 : 0.15;
+    const sw = active ? 2.5 : 1.2;
+    const cpOut_x = (from.x * 0.3 + to.x * 0.7);
+    const cpOut_y = (from.y + to.y) / 2 - 24;
+    s += `<path d="M${from.x},${from.y} Q${cpOut_x},${cpOut_y} ${to.x},${to.y}" fill="none" stroke="${color}" stroke-width="${sw}" opacity="${alpha}"/>`;
+    if (active) s += arrowOnCurve(from.x, from.y, cpOut_x, cpOut_y, to.x, to.y, color, 7, 0.6);
+    const cpBack_x = (to.x * 0.7 + back.x * 0.3);
+    const cpBack_y = (to.y + back.y) / 2 + 24;
+    s += `<path d="M${to.x},${to.y} Q${cpBack_x},${cpBack_y} ${back.x},${back.y}" fill="none" stroke="${color}" stroke-width="${sw}" opacity="${alpha}"/>`;
+    if (active) s += arrowOnCurve(to.x, to.y, cpBack_x, cpBack_y, back.x, back.y, color, 7, 0.6);
+    return s;
+  }
+
+  function drawRow(s, row, varLabel, labelX, labelY, clauseGroups) {
+    const edgeClr = '#777';
+    for (let i = 0; i < row.length-1; i++) {
+      const n1 = row[i], n2 = row[i+1];
+      const oy = 5;
+      s += `<line x1="${n1.x+NR}" y1="${n1.y-oy}" x2="${n2.x-NR}" y2="${n2.y-oy}" stroke="#88b8a0" stroke-width="1.6" stroke-linecap="round"/>`;
+      s += arrowOnLine(n1.x+NR, n1.y-oy, n2.x-NR, n2.y-oy, '#2a6f5f', 6);
+      s += `<line x1="${n2.x-NR}" y1="${n2.y+oy}" x2="${n1.x+NR}" y2="${n1.y+oy}" stroke="#88a8cc" stroke-width="1.6" stroke-linecap="round"/>`;
+      s += arrowOnLine(n2.x-NR, n2.y+oy, n1.x+NR, n1.y+oy, '#2f60a8', 6);
+    }
+    // Dashed clause group ovals (Sipser style)
+    clauseGroups.forEach(g => {
+      s += `<ellipse cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 3"/>`;
+      // No label on ovals here — clause labels are on the nodes to the right
+    });
+    // Row nodes — uniform grey, no labels
+    row.forEach(n => {
+      s += `<circle cx="${n.x}" cy="${n.y}" r="${NR}" fill="#e0e0e0" stroke="#555" stroke-width="1.8"/>`;
+    });
+    // Variable label at left
+    s += `<text x="${labelX}" y="${labelY}" font-family="var(--sans),sans-serif" font-size="14" fill="var(--accent)" font-weight="700">${varLabel}</text>`;
+    return s;
+  }
+
+  function draw() {
+    const svg = document.getElementById('wire-svg');
+    if (!svg) return;
+    const msg = msgs[Math.min(stage, msgs.length-1)];
+    let s = '';
+
+    s += `<text x="${W/2}" y="20" text-anchor="left" font-family="var(--sans),sans-serif" font-size="13" font-weight="700" fill="var(--accent)">${msg.title}</text>`;
+
+    const FIRST1 = row1[0], LAST1 = row1[row1.length-1];
+    const FIRST2 = row2[0], LAST2 = row2[row2.length-1];
+    const eC = '#555';
+
+    // Diamond diagonals
+    s += `<line x1="${S.x}" y1="${S.y+NR}" x2="${FIRST1.x}" y2="${FIRST1.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(S.x, S.y+NR, FIRST1.x, FIRST1.y-NR, eC, 7, 0.5);
+    s += `<line x1="${S.x}" y1="${S.y+NR}" x2="${LAST1.x}" y2="${LAST1.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(S.x, S.y+NR, LAST1.x, LAST1.y-NR, eC, 7, 0.5);
+    s += `<line x1="${FIRST1.x}" y1="${FIRST1.y+NR}" x2="${MID.x}" y2="${MID.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(FIRST1.x, FIRST1.y+NR, MID.x, MID.y-NR, eC, 7, 0.5);
+    s += `<line x1="${LAST1.x}" y1="${LAST1.y+NR}" x2="${MID.x}" y2="${MID.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(LAST1.x, LAST1.y+NR, MID.x, MID.y-NR, eC, 7, 0.5);
+    s += `<line x1="${MID.x}" y1="${MID.y+NR}" x2="${FIRST2.x}" y2="${FIRST2.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(MID.x, MID.y+NR, FIRST2.x, FIRST2.y-NR, eC, 7, 0.5);
+    s += `<line x1="${MID.x}" y1="${MID.y+NR}" x2="${LAST2.x}" y2="${LAST2.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(MID.x, MID.y+NR, LAST2.x, LAST2.y-NR, eC, 7, 0.5);
+    s += `<line x1="${FIRST2.x}" y1="${FIRST2.y+NR}" x2="${T.x}" y2="${T.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(FIRST2.x, FIRST2.y+NR, T.x, T.y-NR, eC, 7, 0.5);
+    s += `<line x1="${LAST2.x}" y1="${LAST2.y+NR}" x2="${T.x}" y2="${T.y-NR}" stroke="${eC}" stroke-width="1.8"/>`;
+    s += arrowOnLine(LAST2.x, LAST2.y+NR, T.x, T.y-NR, eC, 7, 0.5);
+
+    // Detour wires behind nodes
+    for (let i = 0; i < WIRES.length; i++) {
+      s = drawDetour(s, WIRES[i], i < stage);
+    }
+
+    // Draw rows (ovals + nodes)
+    s = drawRow(s, row1, 'x₁', 24, ROW1_Y + 5, clauseGroups1);
+    s = drawRow(s, row2, 'x₂', 24, ROW2_Y + 5, clauseGroups2);
+
+    // Glow ring on active wire's pair nodes
+    if (stage >= 1) {
+      const w = WIRES[stage-1];
+      [w.from, w.back].forEach(n => {
+        s += `<circle cx="${n.x}" cy="${n.y}" r="${NR+5}" fill="none" stroke="${w.color}" stroke-width="2.5" opacity="0.55"/>`;
+      });
+    }
+
+    // S, MID, T nodes
+    s += nodeCircle(S.x, S.y, NR+1, '#d6ebe4', '#2a6f5f', 2.5, 's', 14, '#1c4a3f');
+    s += `<circle cx="${MID.x}" cy="${MID.y}" r="${NR}" fill="#d6ebe4" stroke="#2a6f5f" stroke-width="2"/>`;
+    s += nodeCircle(T.x, T.y, NR+1, '#d6ebe4', '#2a6f5f', 2.5, 't', 14, '#1c4a3f');
+
+    // Clause nodes — to the right, stacked vertically
+    [C1, C2].forEach((c, ci) => {
+      const wired = WIRES.some((w, i) => i < stage && w.clause === ci+1);
+      const fill   = wired ? '#f3e9c4' : '#f0f0f0';
+      const stroke = wired ? '#b58b00' : '#bbb';
+      s += `<circle cx="${c.x}" cy="${c.y}" r="${NR+4}" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+      s += `<text x="${c.x}" y="${c.y+6}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="14" font-weight="700" fill="${wired?'#7a5500':'#aaa'}">${c.label}</text>`;
+    });
+
+    // Direction pill at bottom
+    if (stage >= 1) {
+      const w = WIRES[stage-1];
+      const bg = w.dir === 'LTR' ? '#d6ebe4' : '#d6e3f4';
+      const tc = w.dir === 'LTR' ? '#1c4a3f' : '#1c3060';
+      s += `<rect x="8" y="${H-36}" width="${W-16}" height="28" rx="6" fill="${bg}" stroke="${w.color}" stroke-width="1.5"/>`;
+      s += `<text x="18" y="${H-18}" font-family="var(--sans),sans-serif" font-size="12" fill="${tc}" font-weight="700">${w.dir}: ${w.label}</text>`;
+    }
+
+    svg.innerHTML = s;
+    document.getElementById('wire-explain').innerHTML = `<div class="step-num">${msg.title}</div><p style="margin:6px 0 0;">${msg.body}</p>`;
+  }
+
+  let _s = 0;
+  function step() { _s = Math.min(_s+1, WIRES.length); stage = _s; draw(); }
+  function reset() { _s = 0; stage = 0; draw(); }
+  function atEnd() { return _s >= WIRES.length; }
+
+  WidgetLoop.create({
+    runBtn: document.getElementById('wire-run'),
+    stepBtn: document.getElementById('wire-step'),
+    resetBtn: document.getElementById('wire-reset'),
+    speedSlider: document.getElementById('wire-speed'),
+    speedLabel: document.getElementById('wire-speed-label'),
+    doStep: step, atEnd, doReset: reset,
+    baseStepMs: 2800, baseLoopMs: 5000, autoStartMs: 1500
+  });
+  reset();
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SLIDE 4 · Static example SVG — Sipser-style
+   Uniform grey row nodes, no labels, dashed ovals, clause nodes to right
+   φ = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₂), x₁=FALSE (RTL), x₂=TRUE (LTR)
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+  const svg = document.getElementById('example-svg');
+  if (!svg) return;
+
+  const W = 720, H = 570;
+  const NR = 15;
+
+  const S   = { x: 330, y: 34 };
+  const MID = { x: 330, y: 258 };
+  const T   = { x: 330, y: 510 };
+  const ROW1_Y = 146;
+  const ROW2_Y = 370;
+
+  function mkRow(ry) {
+    return [
+      { x: 75,  y: ry, type: 'sep'  },
+      { x: 168, y: ry, type: 'pair', clause: 1 },
+      { x: 248, y: ry, type: 'pair', clause: 1 },
+      { x: 330, y: ry, type: 'sep'  },
+      { x: 412, y: ry, type: 'pair', clause: 2 },
+      { x: 492, y: ry, type: 'pair', clause: 2 },
+      { x: 585, y: ry, type: 'sep'  },
+    ];
+  }
+  const row1 = mkRow(ROW1_Y);
+  const row2 = mkRow(ROW2_Y);
+
+  const C1 = { x: 48, y: 220, label: 'c₁' };
+  const C2 = { x: 672, y: 220, label: 'c₂' };
+
+  const PATH_CLR = '#1a9a5e';
+  const GREY_CLR = '#c8c8c8';
+  const PATH_W   = 3.2;
+  const GREY_W   = 1.4;
+
+  // Clause group ovals per row
+  const cg1 = [
+    { cx: 208, cy: ROW1_Y, rx: 55, ry: 25 },
+    { cx: 452, cy: ROW1_Y, rx: 55, ry: 25 },
+  ];
+  const cg2 = [
+    { cx: 208, cy: ROW2_Y, rx: 55, ry: 25 },
+    { cx: 452, cy: ROW2_Y, rx: 55, ry: 25 },
+  ];
+
+  function arrowAt(x1,y1,x2,y2,clr,size,t){
+    t=t||0.5; size=size||7;
+    const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const ux=dx/len,uy=dy/len;
+    const mx=x1+ux*len*t,my=y1+uy*len*t;
+    const px=-uy*size,py=ux*size;
+    return `<polygon points="${mx},${my} ${mx-ux*size+px*0.5},${my-uy*size+py*0.5} ${mx-ux*size-px*0.5},${my-uy*size-py*0.5}" fill="${clr}"/>`;
+  }
+
+  function curveArrow(x1,y1,cpx,cpy,x2,y2,clr,sw,active){
+    const op = active ? 1 : 0.2;
+    const stroke = active ? clr : GREY_CLR;
+    const w = active ? sw : GREY_W;
+    let s = `<path d="M${x1},${y1} Q${cpx},${cpy} ${x2},${y2}" fill="none" stroke="${stroke}" stroke-width="${w}" opacity="${op}"/>`;
+    if (active) {
+      const t=0.6;
+      const tx=2*(1-t)*(cpx-x1)+2*t*(x2-cpx);
+      const ty=2*(1-t)*(cpy-y1)+2*t*(y2-cpy);
+      const len=Math.sqrt(tx*tx+ty*ty)||1;
+      const ux=tx/len,uy=ty/len;
+      const bx=(1-t)*(1-t)*x1+2*(1-t)*t*cpx+t*t*x2;
+      const by=(1-t)*(1-t)*y1+2*(1-t)*t*cpy+t*t*y2;
+      const size=7; const px=-uy*size,py=ux*size;
+      s+=`<polygon points="${bx},${by} ${bx-ux*size+px*0.5},${by-uy*size+py*0.5} ${bx-ux*size-px*0.5},${by-uy*size-py*0.5}" fill="${clr}"/>`;
+    }
+    return s;
+  }
+
+  let s = '';
+
+  // Variable + direction labels at left
+  s += `<text x="16" y="${ROW1_Y+4}" font-family="var(--sans),sans-serif" font-size="13" fill="#b03030" font-weight="700">x₁</text>`;
+  s += `<text x="16" y="${ROW2_Y+4}" font-family="var(--sans),sans-serif" font-size="13" fill="#1a9a5e" font-weight="700">x₂</text>`;
+  s += `<text x="16" y="${ROW1_Y+18}" font-family="var(--sans),sans-serif" font-size="10" fill="#b03030">RTL=F</text>`;
+  s += `<text x="16" y="${ROW2_Y+18}" font-family="var(--sans),sans-serif" font-size="10" fill="#1a9a5e">LTR=T</text>`;
+
+  const FIRST1=row1[0], LAST1=row1[row1.length-1];
+  const FIRST2=row2[0], LAST2=row2[row2.length-1];
+
+  // Diagonal edges
+  const diagEdges = [
+    { x1:S.x,y1:S.y+NR, x2:LAST1.x,y2:LAST1.y-NR, active:true },
+    { x1:S.x,y1:S.y+NR, x2:FIRST1.x,y2:FIRST1.y-NR, active:false },
+    { x1:FIRST1.x,y1:FIRST1.y+NR, x2:MID.x,y2:MID.y-NR, active:true },
+    { x1:LAST1.x,y1:LAST1.y+NR, x2:MID.x,y2:MID.y-NR, active:false },
+    { x1:MID.x,y1:MID.y+NR, x2:FIRST2.x,y2:FIRST2.y-NR, active:true },
+    { x1:MID.x,y1:MID.y+NR, x2:LAST2.x,y2:LAST2.y-NR, active:false },
+    { x1:FIRST2.x,y1:FIRST2.y+NR, x2:T.x,y2:T.y-NR, active:false },
+    { x1:LAST2.x,y1:LAST2.y+NR, x2:T.x,y2:T.y-NR, active:true },
+  ];
+  diagEdges.forEach(e => {
+    const clr = e.active ? PATH_CLR : GREY_CLR;
+    const w   = e.active ? PATH_W   : GREY_W;
+    s += `<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="${clr}" stroke-width="${w}" opacity="${e.active?1:0.35}"/>`;
+    if (e.active) s += arrowAt(e.x1,e.y1,e.x2,e.y2,PATH_CLR,7,0.52);
+  });
+
+  // Row 1 — RTL path
+  for (let i=0;i<row1.length-1;i++){
+    const n1=row1[i],n2=row1[i+1];
+    const oy=5;
+    s+=`<line x1="${n1.x+NR}" y1="${n1.y-oy}" x2="${n2.x-NR}" y2="${n2.y-oy}" stroke="${GREY_CLR}" stroke-width="${GREY_W}" opacity="0.3"/>`;
+    s+=arrowAt(n1.x+NR,n1.y-oy,n2.x-NR,n2.y-oy,GREY_CLR,5,0.52);
+    s+=`<line x1="${n2.x-NR}" y1="${n2.y+oy}" x2="${n1.x+NR}" y2="${n1.y+oy}" stroke="${PATH_CLR}" stroke-width="${PATH_W}"/>`;
+    s+=arrowAt(n2.x-NR,n2.y+oy,n1.x+NR,n1.y+oy,PATH_CLR,7,0.52);
+  }
+
+  // Row 2 — LTR path (with detours at clause1 and clause2 pairs)
+  for (let i=0;i<row2.length-1;i++){
+    const n1=row2[i],n2=row2[i+1];
+    const oy=5;
+    const isDetour1 = (i===1);
+    const isDetour2 = (i===4);
+    if (!isDetour1 && !isDetour2) {
+      s+=`<line x1="${n1.x+NR}" y1="${n1.y-oy}" x2="${n2.x-NR}" y2="${n2.y-oy}" stroke="${PATH_CLR}" stroke-width="${PATH_W}"/>`;
+      s+=arrowAt(n1.x+NR,n1.y-oy,n2.x-NR,n2.y-oy,PATH_CLR,7,0.52);
+    } else {
+      s+=`<line x1="${n1.x+NR}" y1="${n1.y-oy}" x2="${n2.x-NR}" y2="${n2.y-oy}" stroke="${GREY_CLR}" stroke-width="${GREY_W}" opacity="0.3"/>`;
+    }
+    s+=`<line x1="${n2.x-NR}" y1="${n2.y+oy}" x2="${n1.x+NR}" y2="${n1.y+oy}" stroke="${GREY_CLR}" stroke-width="${GREY_W}" opacity="0.3"/>`;
+  }
+
+  // Detour arcs (LTR through row2 for clause1 and clause2)
+  const det1from=row2[1], det1back=row2[2];
+  const det2from=row2[4], det2back=row2[5];
+  const cp1ox=(det1from.x*0.3+C1.x*0.7), cp1oy=(det1from.y+C1.y)/2-10;
+  s+=curveArrow(det1from.x,det1from.y,cp1ox,cp1oy,C1.x,C1.y,PATH_CLR,PATH_W,true);
+  const cp1rx=(C1.x*0.7+det1back.x*0.3), cp1ry=(C1.y+det1back.y)/2-48;
+  s+=curveArrow(C1.x,C1.y,cp1rx,cp1ry,det1back.x,det1back.y,PATH_CLR,PATH_W,true);
+  const cp2ox=(det2from.x*0.3+C2.x*0.7), cp2oy=(det2from.y+C2.y)/2-28;
+  s+=curveArrow(det2from.x,det2from.y,cp2ox,cp2oy,C2.x,C2.y,PATH_CLR,PATH_W,true);
+  const cp2rx=(C2.x*0.7+det2back.x*0.3), cp2ry=(C2.y+det2back.y)/2+28;
+  s+=curveArrow(C2.x,C2.y,cp2rx,cp2ry,det2back.x,det2back.y,PATH_CLR,PATH_W,true);
+
+  // Unused detour wires (dashed grey)
+  // c₁ via row1 LTR (unused since x₁=F goes RTL)
+  const gu1=row1[1],gu1b=row1[2];
+  s+=`<path d="M${gu1.x},${gu1.y} Q${(gu1.x*0.3+C1.x*0.7)},${(gu1.y+C1.y)/2-22} ${C1.x},${C1.y}" fill="none" stroke="${GREY_CLR}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>`;
+  s+=`<path d="M${C1.x},${C1.y} Q${(C1.x*0.7+gu1b.x*0.3)},${(C1.y+gu1b.y)/2+22} ${gu1b.x},${gu1b.y}" fill="none" stroke="${GREY_CLR}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>`;
+  // c₂ via row1 RTL (unused)
+  const gu2=row1[5],gu2b=row1[4];
+  s+=`<path d="M${gu2.x},${gu2.y} Q${(gu2.x*0.3+C2.x*0.7)},${(gu2.y+C2.y)/2-22} ${C2.x},${C2.y}" fill="none" stroke="${GREY_CLR}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>`;
+  s+=`<path d="M${C2.x},${C2.y} Q${(C2.x*0.7+gu2b.x*0.3)},${(C2.y+gu2b.y)/2+22} ${gu2b.x},${gu2b.y}" fill="none" stroke="${GREY_CLR}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>`;
+  // c₁ via row2 RTL (unused since x₂=T goes LTR)
+  const gu3=row2[2],gu3b=row2[1];
+  s+=`<path d="M${gu3.x},${gu3.y} Q${(gu3.x*0.3+C1.x*0.7)},${(gu3.y+C1.y)/2+22} ${C1.x},${C1.y}" fill="none" stroke="${GREY_CLR}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>`;
+  s+=`<path d="M${C1.x},${C1.y} Q${(C1.x*0.7+gu3b.x*0.3)},${(C1.y+gu3b.y)/2+22} ${gu3b.x},${gu3b.y}" fill="none" stroke="${GREY_CLR}" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>`;
+
+  // Clause group ovals (Sipser style) — draw behind nodes
+  [...cg1, ...cg2].forEach(g => {
+    s += `<ellipse cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 3"/>`;
+  });
+
+  // Row nodes — uniform grey, green glow ring on path, no labels
+  [row1, row2].forEach(row => {
+    row.forEach(n => {
+      s += `<circle cx="${n.x}" cy="${n.y}" r="${NR+4}" fill="${PATH_CLR}" opacity="0.14"/>`;
+      s += `<circle cx="${n.x}" cy="${n.y}" r="${NR}" fill="#e0e0e0" stroke="#555" stroke-width="1.8"/>`;
+    });
+  });
+
+  // S, MID, T
+  [S, MID, T].forEach(n => {
+    const lbl = n===S?'s':n===MID?'·':'t';
+    const fs  = n===MID ? 18 : 14;
+    s += `<circle cx="${n.x}" cy="${n.y}" r="${NR+5}" fill="${PATH_CLR}" opacity="0.2"/>`;
+    s += nodeCircle(n.x, n.y, NR+1, '#d6ebe4', '#2a6f5f', 2.5, lbl, fs, '#1c4a3f');
+  });
+
+  // Clause nodes
+  [C1, C2].forEach(c => {
+    s += `<circle cx="${c.x}" cy="${c.y}" r="${NR+7}" fill="${PATH_CLR}" opacity="0.18"/>`;
+    s += `<circle cx="${c.x}" cy="${c.y}" r="${NR+4}" fill="#f3e9c4" stroke="#b58b00" stroke-width="2.5"/>`;
+    s += `<text x="${c.x}" y="${c.y+5}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="14" font-weight="700" fill="#7a5500">${c.label}</text>`;
+  });
+
+  // Legend
+  s += `<rect x="8" y="${H-32}" width="380" height="24" rx="5" fill="#e8f5ef" stroke="${PATH_CLR}" stroke-width="1.5"/>`;
+  s += `<text x="16" y="${H-16}" font-family="var(--sans),sans-serif" font-size="11.5" fill="${PATH_CLR}" font-weight="700">── Hamiltonian path (x₁=FALSE, x₂=TRUE)</text>`;
+  s += `<line x1="410" y1="${H-20}" x2="440" y2="${H-20}" stroke="${GREY_CLR}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  s += `<text x="446" y="${H-16}" font-family="var(--sans),sans-serif" font-size="11" fill="#888">Unused graph edges</text>`;
+
+  // Direction labels above rows
+  const rowMidX = (row1[0].x + row1[row1.length-1].x) / 2;
+  s += `<text x="${rowMidX}" y="${ROW1_Y-28}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="12" fill="#b03030" font-weight="700">← x₁ = FALSE (right to left)</text>`;
+  s += `<text x="${rowMidX}" y="${ROW2_Y-28}" text-anchor="middle" font-family="var(--sans),sans-serif" font-size="12" fill="#1a9a5e" font-weight="700">→ x₂ = TRUE (left to right)</text>`;
+
+  svg.innerHTML = s;
+})();
+</script>
+
+<script src="../presentation.js"></script>
+</body></html>
